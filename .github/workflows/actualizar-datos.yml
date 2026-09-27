@@ -2,48 +2,101 @@ name: Actualizar datos de futbol
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * *"
 
 permissions:
   contents: write
 
 jobs:
   actualizar:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-
       - name: Descargar repositorio
         uses: actions/checkout@v6
 
-      - name: Descargar España La Liga 2026-27
+      - name: Descargar datos de futbol
         run: |
-          mkdir -p data/2627
 
-          curl -fL --retry 3 \
-            -A "Mozilla/5.0" \
-            "https://www.football-data.co.uk/mmz4281/2627/SP1.csv" \
-            -o data/2627/SP1.csv
+          TEMPORADAS=("2526" "2627")
 
-          test -s data/2627/SP1.csv
+          LIGAS=(
+            "SP1"
+            "SP2"
+            "E0"
+            "E1"
+            "D1"
+            "D2"
+            "I1"
+            "I2"
+            "F1"
+            "F2"
+            "N1"
+            "B1"
+            "P1"
+            "T1"
+            "G1"
+            "SC0"
+          )
 
-          echo "Archivo descargado correctamente:"
-          ls -lh data/2627/SP1.csv
+          for TEMPORADA in "${TEMPORADAS[@]}"; do
 
-          echo "Encabezado:"
-          head -n 1 data/2627/SP1.csv
+            echo "======================================"
+            echo "TEMPORADA: $TEMPORADA"
+            echo "======================================"
 
-          grep -q "HomeTeam" data/2627/SP1.csv
+            mkdir -p "data/$TEMPORADA"
 
-      - name: Guardar CSV en GitHub
+            for LIGA in "${LIGAS[@]}"; do
+
+              echo "--------------------------------------"
+              echo "Descargando $LIGA - $TEMPORADA"
+              echo "--------------------------------------"
+
+              URL="https://www.football-data.co.uk/mmz4281/${TEMPORADA}/${LIGA}.csv"
+
+              TEMP_FILE="data/${TEMPORADA}/${LIGA}.tmp"
+              FINAL_FILE="data/${TEMPORADA}/${LIGA}.csv"
+
+              if curl -fL --retry 3 \
+                -A "Mozilla/5.0" \
+                "$URL" \
+                -o "$TEMP_FILE"; then
+
+                if test -s "$TEMP_FILE"; then
+                  mv "$TEMP_FILE" "$FINAL_FILE"
+                  echo "OK: $FINAL_FILE"
+                  ls -lh "$FINAL_FILE"
+                else
+                  echo "Archivo vacío: $LIGA"
+                  rm -f "$TEMP_FILE"
+                fi
+
+              else
+
+                echo "No disponible todavía: $LIGA - $TEMPORADA"
+                rm -f "$TEMP_FILE"
+
+              fi
+
+            done
+
+          done
+
+      - name: Guardar archivos en GitHub
         run: |
+
           git config user.name "GitHub Actions"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add data/2627/SP1.csv
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/
 
           if git diff --cached --quiet; then
-            echo "No hay cambios nuevos en el CSV."
+            echo "No hay cambios nuevos."
           else
-            git commit -m "Actualizar España La Liga 2026-27"
+            git commit -m "Actualizar datos de fútbol"
             git push
           fi

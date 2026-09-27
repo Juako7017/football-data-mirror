@@ -1,0 +1,12 @@
+name: Actualizar datos de futbol
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Mostrar mensaje
+        run: echo "GitHub Actions funciona correctamente"

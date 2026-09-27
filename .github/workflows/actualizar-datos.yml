@@ -164,5 +164,4 @@ jobs:
             git commit -m "Actualizar datos de fútbol"
             git push
           fi
-            git push
-          fi
+         

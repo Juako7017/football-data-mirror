@@ -13,23 +13,31 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
+
       - name: Descargar repositorio
         uses: actions/checkout@v6
 
-      - name: Descargar datos de futbol
+      - name: Descargar ligas principales
         run: |
 
           TEMPORADAS=("2526" "2627")
 
           LIGAS=(
-            "SP1"
-            "SP2"
             "E0"
             "E1"
+            "E2"
+            "E3"
+            "EC"
+            "SC0"
+            "SC1"
+            "SC2"
+            "SC3"
             "D1"
             "D2"
             "I1"
             "I2"
+            "SP1"
+            "SP2"
             "F1"
             "F2"
             "N1"
@@ -37,7 +45,6 @@ jobs:
             "P1"
             "T1"
             "G1"
-            "SC0"
           )
 
           for TEMPORADA in "${TEMPORADAS[@]}"; do
@@ -67,7 +74,6 @@ jobs:
                 if test -s "$TEMP_FILE"; then
                   mv "$TEMP_FILE" "$FINAL_FILE"
                   echo "OK: $FINAL_FILE"
-                  ls -lh "$FINAL_FILE"
                 else
                   echo "Archivo vacío: $LIGA"
                   rm -f "$TEMP_FILE"
@@ -75,7 +81,7 @@ jobs:
 
               else
 
-                echo "No disponible todavía: $LIGA - $TEMPORADA"
+                echo "No disponible: $LIGA - $TEMPORADA"
                 rm -f "$TEMP_FILE"
 
               fi
@@ -83,6 +89,64 @@ jobs:
             done
 
           done
+
+
+      - name: Descargar ligas adicionales
+        run: |
+
+          mkdir -p data/extra
+
+          LIGAS_EXTRA=(
+            "ARG"
+            "AUT"
+            "BRA"
+            "CHN"
+            "DNK"
+            "FIN"
+            "IRL"
+            "JPN"
+            "MEX"
+            "NOR"
+            "POL"
+            "ROU"
+            "SWE"
+            "SWZ"
+            "USA"
+          )
+
+          for LIGA in "${LIGAS_EXTRA[@]}"; do
+
+            echo "--------------------------------------"
+            echo "Descargando liga extra: $LIGA"
+            echo "--------------------------------------"
+
+            URL="https://football-data.co.uk/new/${LIGA}.csv"
+
+            TEMP_FILE="data/extra/${LIGA}.tmp"
+            FINAL_FILE="data/extra/${LIGA}.csv"
+
+            if curl -fL --retry 3 \
+              -A "Mozilla/5.0" \
+              "$URL" \
+              -o "$TEMP_FILE"; then
+
+              if test -s "$TEMP_FILE"; then
+                mv "$TEMP_FILE" "$FINAL_FILE"
+                echo "OK: $FINAL_FILE"
+              else
+                echo "Archivo vacío: $LIGA"
+                rm -f "$TEMP_FILE"
+              fi
+
+            else
+
+              echo "No disponible actualmente: $LIGA"
+              rm -f "$TEMP_FILE"
+
+            fi
+
+          done
+
 
       - name: Guardar archivos en GitHub
         run: |
@@ -98,5 +162,7 @@ jobs:
             echo "No hay cambios nuevos."
           else
             git commit -m "Actualizar datos de fútbol"
+            git push
+          fi
             git push
           fi
